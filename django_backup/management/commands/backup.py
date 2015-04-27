@@ -55,8 +55,9 @@ def between_interval(filename, start, end):
 
 def reserve_interval(backups, type, num):
     '''
-    given a list of backup filenames, interval type(monthly, weekly, daily),
-    and the number of backups to keep, return a list of filenames to reserve.
+    given a list of backup filenames, interval type(monthly, weekly, daily,
+    hourly), and the number of backups to keep, return a list of filenames to
+    reserve.
     '''
     result = []
     now = datetime.now()
@@ -74,6 +75,10 @@ def reserve_interval(backups, type, num):
         delta = timedelta(1)
         interval_end = datetime(now.year, now.month, now.day) + delta
         interval_start = interval_end - delta
+    elif type == 'hourly':
+        delta = timedelta(hours=1)
+        interval_end = datetime(now.year, now.month, now.day) + timedelta(1)
+        interval_start = interval_end - delta
     for i in range(1, num + 1):
         for backup in backups:
             if between_interval(backup, interval_start, interval_end):
@@ -86,13 +91,12 @@ def reserve_interval(backups, type, num):
 
 def decide_remove(backups, config):
     '''
-    given a list of backup filenames and setttings, decide the files to be deleted.
+    given a list of backup filenames and settings, decide the files to be deleted.
     '''
     reserve = []
     remove_list = []
-    reserve += reserve_interval(backups, 'monthly', config['monthly'])
-    reserve += reserve_interval(backups, 'weekly', config['weekly'])
-    reserve += reserve_interval(backups, 'daily', config['daily'])
+    for interval_spec in config.keys():
+        reserve += reserve_interval(backups, interval_spec, config[interval_spec])
     for i in backups:
         if i not in reserve:
             remove_list.append(i)
